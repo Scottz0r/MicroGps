@@ -1,22 +1,3 @@
-# MicroGps
-
-GPS module that parses NMEA messages for embedded devices. This project contains a C++ class, `MicroGps` that collects NMEA formatted GPS messages.
-
-Items in the `scottz0r::_detail` namespace are not for public consumption are may be changed in the future!
-
-## Supported Messages
-
-- GPGGA
-
-## Tests
-
-Unit tests are in the `tests` directory. This can be built with Visual Studio 2019 Community on Windows, or G++ on Linux on Linux subsystems such as Cygwin.
-
-## Example Arduino Sketch
-
-Also available in `examples` directory.
-
-```c++
 #include <MicroGps.h>
 
 using namespace scottz0r;
@@ -74,5 +55,3 @@ void handle_gpgga()
 
     Serial.println();
 }
-
-```
