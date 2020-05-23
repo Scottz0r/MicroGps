@@ -6,7 +6,6 @@
 
 namespace scottz0r
 {
-
     using MessageType = MicroGps::MessageType;
 
     TEST_CASE("MicroGps")
