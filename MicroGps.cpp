@@ -2,11 +2,13 @@
 
 namespace scottz0r
 {
+namespace gps
+{
+
     /**
         Returns true if the given bit flag is set in integral type x.
     */
-    template<typename _T, typename _F>
-    inline bool is_flag_set(_T x, _F flag)
+    template <typename _T, typename _F> inline bool is_flag_set(_T x, _F flag)
     {
         return (x & (_T)flag) > 0;
     }
@@ -14,8 +16,7 @@ namespace scottz0r
     /**
         Set the given bit flag on the integral type x.
     */
-    template<typename _T, typename _F>
-    inline _T set_flag(_T x, _F flag)
+    template <typename _T, typename _F> inline _T set_flag(_T x, _F flag)
     {
         return x | (_T)flag;
     }
@@ -23,8 +24,7 @@ namespace scottz0r
     /**
         Clear the given bit flag on the integral type x.
     */
-    template<typename _T, typename _F>
-    inline _T clear_flag(_T x, _F flag)
+    template <typename _T, typename _F> inline _T clear_flag(_T x, _F flag)
     {
         return x & (~((_T)flag));
     }
@@ -58,7 +58,7 @@ namespace scottz0r
             Checks string equality with character arrays. Behavior is undefined is character array is not null
             terminated. Returns false if either input is null.
         */
-        bool string_equals(const char* lhs, const char* rhs)
+        bool string_equals(const char *lhs, const char *rhs)
         {
             // Return false if either input is null.
             if (!lhs || !rhs)
@@ -84,7 +84,7 @@ namespace scottz0r
             Converts an ASCII character array into an integer. Behavior is undefined is character array is not null
             terminated.
         */
-        int string_to_int(const char* val)
+        int string_to_int(const char *val)
         {
             if (!val)
             {
@@ -127,7 +127,7 @@ namespace scottz0r
             Converts an ASCII character array into a float. Behavior is undefined is character array is not null
             terminated.
         */
-        float string_to_float(const char* val)
+        float string_to_float(const char *val)
         {
             if (!val)
             {
@@ -186,7 +186,7 @@ namespace scottz0r
         /**
             Parse a NMEA latitude string.
         */
-        float parse_latitude(const char* val, gps_size_type size)
+        float parse_latitude(const char *val, size_type size)
         {
             if (size < 2)
             {
@@ -208,7 +208,7 @@ namespace scottz0r
         /**
             Parse a NMEA longitude string.
         */
-        float parse_longitude(const char* val, gps_size_type size)
+        float parse_longitude(const char *val, size_type size)
         {
             if (size < 3)
             {
@@ -227,18 +227,13 @@ namespace scottz0r
             degrees += (minutes / 60.0f);
             return degrees;
         }
-    }
+    } // namespace _detail
 
-    using namespace scottz0r::_detail;
+    using namespace scottz0r::gps::_detail;
 
     MicroGps::MicroGps()
-        : m_bit_flags( 0 )
-        , m_checksum(0)
-        , m_field_num( 0 )
-        , m_message_type( MessageType::Unknown )
-        , m_position()
+        : m_bit_flags(0), m_checksum(0), m_field_num(0), m_message_type(MessageType::Unknown), m_position()
     {
-
     }
 
     /**
@@ -375,7 +370,7 @@ namespace scottz0r
         }
         else
         {
-            switch(m_message_type)
+            switch (m_message_type)
             {
             case MessageType::GPGGA:
                 process_gpgga_fields();
@@ -398,12 +393,11 @@ namespace scottz0r
             // Time
             m_position.timestamp = (unsigned)string_to_int(m_buffer.get());
             break;
-        case 2:
-            {
+        case 2: {
             // Latitude
             m_position.latitude = parse_latitude(m_buffer.get(), m_buffer.size());
             break;
-            }
+        }
         case 3:
             // Latitude North/South
             if (m_buffer.at(0) == 'S')
@@ -471,4 +465,5 @@ namespace scottz0r
             m_bit_flags = set_flag(m_bit_flags, StateBits::BadBit);
         }
     }
-}
+} // namespace gps
+} // namespace scottz0r

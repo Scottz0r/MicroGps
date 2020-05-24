@@ -1,11 +1,13 @@
-#define CATCH_CONFIG_MAIN
-#include "catch.hpp"
 #include "MicroGps.h"
-#include <string>
+#include "catch.hpp"
 #include <iostream>
+#include <string>
 
 namespace scottz0r
 {
+namespace MicroGps_tests
+{
+    using namespace scottz0r::gps;
     using MessageType = MicroGps::MessageType;
 
     TEST_CASE("MicroGps")
@@ -29,7 +31,7 @@ namespace scottz0r
             REQUIRE_FALSE(gps.bad());
             REQUIRE(gps.message_type() == MessageType::GPGGA);
 
-            const auto& posn = gps.position_data();
+            const auto &posn = gps.position_data();
 
             REQUIRE(posn.timestamp == 153621);
             REQUIRE(posn.latitude == Approx(38.0f + (54.8732f / 60.0f)));
@@ -60,7 +62,7 @@ namespace scottz0r
             REQUIRE_FALSE(gps.bad());
             REQUIRE(gps.message_type() == MessageType::GPGGA);
 
-            const auto& posn = gps.position_data();
+            const auto &posn = gps.position_data();
 
             REQUIRE(posn.timestamp == 152541);
             REQUIRE(posn.latitude == 0.0f);
@@ -99,7 +101,8 @@ namespace scottz0r
         SECTION("It should ignore characters before $")
         {
             std::string beg_junk = "ASDF1234,SADF93KA.DFJ";
-            std::string msg = beg_junk + "$GPGGA,153621.000,3854.8732,N,09445.3680,W,1,04,2.07,243.9,M,-30.1,M,,*5B\r\n";
+            std::string msg =
+                beg_junk + "$GPGGA,153621.000,3854.8732,N,09445.3680,W,1,04,2.07,243.9,M,-30.1,M,,*5B\r\n";
 
             MicroGps gps;
 
@@ -124,7 +127,7 @@ namespace scottz0r
             std::string msg("ABCDEFGHIJKLMNOPQRSTUVWXYZ");
 
             _detail::GpsBuffer<32> buffer;
-            for (const auto& c : msg)
+            for (const auto &c : msg)
             {
                 buffer.append(c);
             }
@@ -334,4 +337,6 @@ namespace scottz0r
             REQUIRE(_detail::parse_longitude(input, sizeof(input)) == 0.0f);
         }
     }
-}
+
+} // namespace MicroGps_tests
+} // namespace scottz0r

@@ -1,10 +1,12 @@
 #ifndef _SCOTTZ0R_NANO_GPS_INCLUDE_GUARD
 #define _SCOTTZ0R_NANO_GPS_INCLUDE_GUARD
 
+#include "MicroGpsTypes.h"
+
 namespace scottz0r
 {
-    // Types
-    using gps_size_type = unsigned;
+namespace gps
+{
 
     struct GpsPosition
     {
@@ -24,13 +26,12 @@ namespace scottz0r
         /**
             Safe buffer implementation that does range checking.
         */
-        template<gps_size_type _Capacity>
-        class GpsBuffer
+        template <size_type _Capacity> class GpsBuffer
         {
         public:
-            GpsBuffer()
-                : m_size( 0 )
-            { }
+            GpsBuffer() : m_size(0)
+            {
+            }
 
             /**
                 Attempt to append the character to the buffer. Does nothing and returns false if the buffer capacity
@@ -51,7 +52,7 @@ namespace scottz0r
             /**
                 Get the character at the given index, or returns 0 if out of bounds.
             */
-            inline char at(gps_size_type index) const
+            inline char at(size_type index) const
             {
                 if (index < size())
                 {
@@ -64,7 +65,10 @@ namespace scottz0r
             /**
                 Get the total number of bytes the buffer can hold.
             */
-            constexpr const gps_size_type capacity() const { return _Capacity; }
+            constexpr const size_type capacity() const
+            {
+                return _Capacity;
+            }
 
             /**
                 "Clear" the buffer, by resetting collection to start at the beginning. Contents are not reset!
@@ -77,16 +81,22 @@ namespace scottz0r
             /**
                 Get a pointer to the beginning of the buffer.
             */
-            inline const char* get() const { return m_buffer; }
+            inline const char *get() const
+            {
+                return m_buffer;
+            }
 
             /**
                 Get the current size of the buffer.
             */
-            gps_size_type size() const { return m_size; }
+            size_type size() const
+            {
+                return m_size;
+            }
 
         private:
             char m_buffer[_Capacity];
-            gps_size_type m_size;
+            size_type m_size;
         };
 
         /**
@@ -112,16 +122,16 @@ namespace scottz0r
 
         char from_hex(char c);
 
-        bool string_equals(const char* lhs, const char* rhs);
+        bool string_equals(const char *lhs, const char *rhs);
 
-        int string_to_int(const char* val);
+        int string_to_int(const char *val);
 
-        float string_to_float(const char* val);
+        float string_to_float(const char *val);
 
-        float parse_latitude(const char* val, gps_size_type size);
+        float parse_latitude(const char *val, size_type size);
 
-        float parse_longitude(const char* val, gps_size_type size);
-    }
+        float parse_longitude(const char *val, size_type size);
+    } // namespace _detail
 
     class MicroGps
     {
@@ -147,22 +157,34 @@ namespace scottz0r
             Get the GPS position data. Data will be valid after a GPGGA message has been parsed successfully up to
             the start of the next GPGGA message.
         */
-        inline const GpsPosition& position_data() { return m_position; }
+        inline const GpsPosition &position_data()
+        {
+            return m_position;
+        }
 
         /**
             Returns true if the bad bit is set. This indicates that the last message parse is invalid.
         */
-        inline bool bad() const { return m_bit_flags & (unsigned char)StateBits::BadBit; }
+        inline bool bad() const
+        {
+            return m_bit_flags & (unsigned char)StateBits::BadBit;
+        }
 
         /**
             Returns true if the last message parse was successful.
         */
-        inline bool good() const { return !bad(); }
+        inline bool good() const
+        {
+            return !bad();
+        }
 
         /**
             Get the last parsed message type.
         */
-        inline MessageType message_type() const { return m_message_type; }
+        inline MessageType message_type() const
+        {
+            return m_message_type;
+        }
 
     private:
         void process_field();
@@ -178,6 +200,8 @@ namespace scottz0r
         MessageType m_message_type;
         GpsPosition m_position;
     };
-}
+
+} // namespace gps
+} // namespace scottz0r
 
 #endif // _SCOTTZ0R_NANO_GPS_INCLUDE_GUARD
