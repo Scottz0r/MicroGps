@@ -4,7 +4,7 @@ namespace scottz0r
 {
 namespace gps
 {
-    static void reverse(char *buffer, int length);
+    static char *format_ddmm_min_part(char *dst, float minutes);
 
     /// @brief Format latitude in degrees into NDD MM.MMMM format. Destination buffer must be 16 characters or
     /// larger.
@@ -27,20 +27,41 @@ namespace gps
             return false;
         }
 
+        char *p_dst = dst;
+
         // North vs South. Always make the degrees absolute value to avoid negative signs.
         float abs_deg;
         if (deg < 0)
         {
-            dst[0] = 'S';
+            *p_dst = 'S';
             abs_deg = -1 * deg;
         }
         else
         {
-            dst[0] = 'N';
+            *p_dst = 'N';
             abs_deg = deg;
         }
+        ++p_dst;
 
-        format_deg_ddmm(abs_deg, dst + 1, dst_size - 1);
+        // This format is very specifically dd mm.mmmm, so a very direct formatting method can be used. This requires
+        // that input be check for bounds before running this chunk.
+
+        // Whole number (two digits).
+        int whole_part = (int)abs_deg;
+        *p_dst = (whole_part / 10) + '0';
+        ++p_dst;
+        whole_part %= 10;
+
+        *p_dst = whole_part + '0';
+        ++p_dst;
+
+        *p_dst = ' ';
+        ++p_dst;
+
+        // Convert remainder degrees into minutes.
+        float minutes = (abs_deg - (int)abs_deg) * 60.0f;
+        p_dst = format_ddmm_min_part(p_dst, minutes);
+        *p_dst = 0;
 
         return true;
     }
@@ -66,159 +87,89 @@ namespace gps
             return false;
         }
 
+        char *p_dst = dst;
+
         // East vs West. Always make the degrees absolute value to avoid negative signs.
         float abs_deg;
         if (deg < 0)
         {
-            dst[0] = 'W';
+            *p_dst = 'W';
             abs_deg = -1 * deg;
         }
         else
         {
-            dst[0] = 'E';
+            *p_dst = 'E';
             abs_deg = deg;
         }
+        ++p_dst;
 
-        // Pad leading zero if less than 3 digits.
-        size_type idx = 1;
-        if (abs_deg < 100.0)
-        {
-            dst[1] = '0';
-            ++idx;
-        }
+        // Whole number (three digits).
+        int whole_part = (int)abs_deg;
+        *p_dst = (whole_part / 100) + '0';
+        ++p_dst;
+        whole_part %= 100;
 
-        format_deg_ddmm(abs_deg, dst + idx, dst_size - idx);
+        *p_dst = (whole_part / 10) + '0';
+        ++p_dst;
+        whole_part %= 10;
 
-        return true;
-    }
+        *p_dst = whole_part + '0';
+        ++p_dst;
 
-    /// @brief Format a number into degrees and minutes, like -DDD MM.MMMM. Destination buffer must be 12 or
-    /// more characters. Degrees must be between -180 and 180. Destination buffer must be 13 characters or larger.
-    ///
-    /// @param deg Degrees
-    /// @param dst Destination character buffer.
-    /// @param dst_size Size of destination buffer.
-    /// @return True if format successful.
-    bool format_deg_ddmm(float deg, char *dst, size_type dst_size)
-    {
-        if (!dst || dst_size < 13)
-        {
-            return false;
-        }
+        *p_dst = ' ';
+        ++p_dst;
 
-        if (deg < -180.0 || deg > 180.0)
-        {
-            return false;
-        }
-
-        size_type idx = 0;
-        float abs_deg;
-
-        // Handle negative numbers by adding negative sign.
-        if (deg < 0.0f)
-        {
-            abs_deg = -1 * deg;
-            dst[0] = '-';
-            ++idx;
-        }
-        else
-        {
-            abs_deg = deg;
-        }
-
-        // Format the whole degrees part.
-        int number = (int)abs_deg;
-        idx += int_to_string(number, dst + idx, dst_size - idx);
-
-        dst[idx] = ' ';
-        ++idx;
-
-        // Format the whole number minutes.
+        // Convert remainder degrees into minutes.
         float minutes = (abs_deg - (int)abs_deg) * 60.0f;
-        int minutes_whole = (int)minutes;
-
-        idx += int_to_string(minutes_whole, dst + idx, dst_size - idx);
-
-        dst[idx] = '.';
-        ++idx;
-
-        // Format a 4 digit decimal part of minutes.
-        // TODO: This doesn't work because of leading zeros.
-        int minutes_dec = (int)((minutes - minutes_whole) * 10000.0f);
-        idx = int_to_string(minutes_dec, dst + idx, dst_size - idx);
+        p_dst = format_ddmm_min_part(p_dst, minutes);
+        *p_dst = 0;
 
         return true;
     }
 
-    /// @brief Convert an integer to a string. The destination buffer will always be null terminated.
+    /// @brief Format the MM.MMMM part of latitude or longitude. Does very explicit formatting and assumes destination
+    /// is large enough.
     ///
-    /// @param number The value to convert.
-    /// @param dst Destination character buffer.
-    /// @param dst_size Size of destination buffer.
-    /// @return Number of characters after format, not including null terminator.
-    size_type int_to_string(int number, char *dst, size_type dst_size)
+    /// @param dst Format destination buffer.
+    /// @param minutes The minutes to format.
+    /// @return A pointer to the next char in dst after formatted characters.
+    static char *format_ddmm_min_part(char *dst, float minutes)
     {
-        if (!dst || dst_size == 0)
-        {
-            return 0;
-        }
+        int whole_part;
+        char *p_dst = dst;
 
-        size_type i = 0;
-        size_type end = dst_size - 1;
+        whole_part = (int)minutes;
 
-        int temp_number = number;
+        *p_dst = (whole_part / 10) + '0';
+        ++p_dst;
+        whole_part %= 10;
 
-        // Add negative sign to negative values.
-        if (temp_number < 0)
-        {
-            dst[0] = '-';
-            ++i;
+        *p_dst = (whole_part) + '0';
+        ++p_dst;
 
-            temp_number *= -1;
-        }
+        *p_dst = '.';
+        ++p_dst;
 
-        // Walk though the number, dividing by 10 to get each digit to add.
-        while (temp_number != 0 && i < end)
-        {
-            int remainder = temp_number % 10;
-            dst[i] = remainder + '0';
-            ++i;
-            temp_number /= 10;
-        }
+        // Remaining 4 decimal digits of minutes.
+        whole_part = (int)((minutes - (int)minutes) * 10000.0f);
 
-        // For negative numbers, do not include the negative sign when reversing.
-        if (number < 0)
-        {
-            reverse(dst + 1, i - 1);
-        }
-        else
-        {
-            reverse(dst, i);
-        }
+        *p_dst = (whole_part / 1000) + '0';
+        ++p_dst;
+        whole_part %= 1000;
 
-        dst[i] = 0;
+        *p_dst = (whole_part / 100) + '0';
+        ++p_dst;
+        whole_part %= 100;
 
-        return i;
+        *p_dst = (whole_part / 10) + '0';
+        ++p_dst;
+        whole_part %= 10;
+
+        *p_dst = (whole_part) + '0';
+        ++p_dst;
+
+        return p_dst;
     }
 
-    /// @brief Reverse an array.
-    ///
-    /// @param buffer Array to reverse.
-    /// @param length Number of items to reverse.
-    static void reverse(char *buffer, int length)
-    {
-        int start = 0;
-        int end = length - 1;
-
-        while (start < end)
-        {
-            buffer[start] ^= buffer[end];
-            buffer[end] ^= buffer[start];
-            buffer[start] ^= buffer[end];
-
-            ++start;
-            --end;
-        }
-    }
 } // namespace gps
 } // namespace scottz0r
