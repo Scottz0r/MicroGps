@@ -1,16 +1,24 @@
 # Makefile for MicroGps test program.
-OBJECTS = ../MicroGps.o tests.o
+OBJECTS = ../MicroGps.o ../MicroGpsFormat.o test_main.o MicroGps_tests.o MicroGpsFormat_tests.o
 TARGET = TestMicroGps
 
 program: $(OBJECTS)
 	g++ $(OBJECTS) -o $(TARGET)
 
-../MicroGps.o: ../MicroGps.h
-	g++ -g -DDEBUG -c ../MicroGps.cpp -o $@
+../MicroGps.o: ../MicroGps.h ../MicroGpsTypes.h
+	g++ -g -c ../MicroGps.cpp -o $@
 
-# Due to Catch2, this requires special assembler arguments, else it fails with "too large".
-tests.o: ../MicroGps.cpp ../MicroGps.h
-	g++ -g -DDEBUG -Wa,-mbig-obj -I.. -c tests.cpp -o $@
+../MicroGpsFormat.o: ../MicroGpsFormat.h ../MicroGpsTypes.h
+	g++ -g -c ../MicroGpsFormat.cpp -o $@
+
+MicroGps_tests.o: MicroGps_tests.cpp ../MicroGps.h
+	g++ -g -c -I.. MicroGps_tests.cpp -o $@
+
+MicroGpsFormat_tests.o: MicroGpsFormat_tests.cpp ../MicroGpsFormat.h
+	g++ -g -c -I.. MicroGpsFormat_tests.cpp -o $@
+
+test_main:
+	g++ -g -c test_main.cpp -o $@
 
 .PHONY: clean run
 clean:

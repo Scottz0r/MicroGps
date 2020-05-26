@@ -1,11 +1,16 @@
+/// @file MicroGps definition module.
+///
+/// This module defines the MicroGps class, which processes NMEA GPS messages with low overhead.
 #ifndef _SCOTTZ0R_NANO_GPS_INCLUDE_GUARD
 #define _SCOTTZ0R_NANO_GPS_INCLUDE_GUARD
 
+#include "MicroGpsTypes.h"
+
 namespace scottz0r
 {
-    // Types
-    using gps_size_type = unsigned;
-
+namespace gps
+{
+    /// Holds data from GPGGA sentences.
     struct GpsPosition
     {
         unsigned timestamp;
@@ -18,24 +23,21 @@ namespace scottz0r
         float geoid_height;
     };
 
-    // Detail implementations. Do not used. Exposed for test coverage.
+    /// @brief Detail implementations. Do not used. Exposed for test coverage.
     namespace _detail
     {
-        /**
-            Safe buffer implementation that does range checking.
-        */
-        template<gps_size_type _Capacity>
-        class GpsBuffer
+        /// @brief Safe buffer implementation that does range checking.
+        template <size_type _Capacity> class GpsBuffer
         {
         public:
-            GpsBuffer()
-                : m_size( 0 )
-            { }
+            GpsBuffer() : m_size(0)
+            {
+            }
 
-            /**
-                Attempt to append the character to the buffer. Does nothing and returns false if the buffer capacity
-                is exceeded.
-            */
+            /// @brief Attempt to append the character to the buffer. Does nothing and returns false if the buffer
+            /// capacity is exceeded.
+            ///
+            /// @param c Character to append.
             bool append(char c)
             {
                 if (m_size < _Capacity)
@@ -48,10 +50,8 @@ namespace scottz0r
                 return false;
             }
 
-            /**
-                Get the character at the given index, or returns 0 if out of bounds.
-            */
-            inline char at(gps_size_type index) const
+            /// @brief Get the character at the given index, or returns 0 if out of bounds.
+            inline char at(size_type index) const
             {
                 if (index < size())
                 {
@@ -61,45 +61,42 @@ namespace scottz0r
                 return 0;
             }
 
-            /**
-                Get the total number of bytes the buffer can hold.
-            */
-            constexpr const gps_size_type capacity() const { return _Capacity; }
+            /// @brief Get the total number of bytes the buffer can hold.
+            constexpr const size_type capacity() const
+            {
+                return _Capacity;
+            }
 
-            /**
-                "Clear" the buffer, by resetting collection to start at the beginning. Contents are not reset!
-            */
+            /// @brief "Clear" the buffer, by resetting collection to start at the beginning. Contents are not reset!
             void clear()
             {
                 m_size = 0;
             }
 
-            /**
-                Get a pointer to the beginning of the buffer.
-            */
-            inline const char* get() const { return m_buffer; }
+            /// @brief Get a pointer to the beginning of the buffer.
+            inline const char *get() const
+            {
+                return m_buffer;
+            }
 
-            /**
-                Get the current size of the buffer.
-            */
-            gps_size_type size() const { return m_size; }
+            /// @brief Get the current size of the buffer.
+            size_type size() const
+            {
+                return m_size;
+            }
 
         private:
             char m_buffer[_Capacity];
-            gps_size_type m_size;
+            size_type m_size;
         };
 
-        /**
-            Tests if given ASCII character is a digit.
-        */
+        /// @brief Tests if given ASCII character is a digit.
         inline bool is_digit(char c)
         {
             return c >= '0' && c <= '9';
         }
 
-        /**
-            Converts given ASCII character to an integer value.
-        */
+        /// @brief Converts given ASCII character to an integer value.
         inline char to_digit(char c)
         {
             if (c >= '0' && c <= '9')
@@ -112,17 +109,22 @@ namespace scottz0r
 
         char from_hex(char c);
 
-        bool string_equals(const char* lhs, const char* rhs);
+        bool string_equals(const char *lhs, const char *rhs);
 
-        int string_to_int(const char* val);
+        int string_to_int(const char *val);
 
-        float string_to_float(const char* val);
+        float string_to_float(const char *val);
 
-        float parse_latitude(const char* val, gps_size_type size);
+        float parse_latitude(const char *val, size_type size);
 
-        float parse_longitude(const char* val, gps_size_type size);
-    }
+        float parse_longitude(const char *val, size_type size);
+    } // namespace _detail
 
+    /// @brief NMEA GPS message processing class for embedded systems.
+    ///
+    /// This class holds and manages the state required for collecting and processing NMEA strings. This class is
+    /// intended to be used in embedded systems where resources are limited. Messages are collected and processed
+    /// one character at a time.
     class MicroGps
     {
         enum class StateBits : unsigned char
@@ -133,6 +135,7 @@ namespace scottz0r
         };
 
     public:
+        /// @brief Supported message types that this class can process.
         enum class MessageType : unsigned char
         {
             GPGGA,
@@ -143,26 +146,30 @@ namespace scottz0r
 
         bool process(char c);
 
-        /**
-            Get the GPS position data. Data will be valid after a GPGGA message has been parsed successfully up to
-            the start of the next GPGGA message.
-        */
-        inline const GpsPosition& position_data() { return m_position; }
+        /// @brief Get the GPS position data. Data will be valid after a GPGGA message has been parsed successfully
+        /// up to the start of the next GPGGA message.
+        inline const GpsPosition &position_data()
+        {
+            return m_position;
+        }
 
-        /**
-            Returns true if the bad bit is set. This indicates that the last message parse is invalid.
-        */
-        inline bool bad() const { return m_bit_flags & (unsigned char)StateBits::BadBit; }
+        /// @brief Returns true if the bad bit is set. This indicates that the last message parse is invalid.
+        inline bool bad() const
+        {
+            return m_state_bit_flags & (unsigned char)StateBits::BadBit;
+        }
 
-        /**
-            Returns true if the last message parse was successful.
-        */
-        inline bool good() const { return !bad(); }
+        /// @brief Returns true if the last message parse was successful.
+        inline bool good() const
+        {
+            return !bad();
+        }
 
-        /**
-            Get the last parsed message type.
-        */
-        inline MessageType message_type() const { return m_message_type; }
+        /// @brief Get the last parsed message type.
+        inline MessageType message_type() const
+        {
+            return m_message_type;
+        }
 
     private:
         void process_field();
@@ -171,13 +178,15 @@ namespace scottz0r
 
         void process_gpgga_fields();
 
-        unsigned char m_bit_flags; // Booleans, combined to save space.
         _detail::GpsBuffer<32> m_buffer;
         char m_checksum;
         unsigned char m_field_num;
         MessageType m_message_type;
         GpsPosition m_position;
+        unsigned char m_state_bit_flags; // Booleans, combined to save space.
     };
-}
+
+} // namespace gps
+} // namespace scottz0r
 
 #endif // _SCOTTZ0R_NANO_GPS_INCLUDE_GUARD
