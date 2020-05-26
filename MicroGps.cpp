@@ -1,3 +1,4 @@
+/// @file MicroGps implementation.
 #include "MicroGps.h"
 
 namespace scottz0r
@@ -5,25 +6,19 @@ namespace scottz0r
 namespace gps
 {
 
-    /**
-        Returns true if the given bit flag is set in integral type x.
-    */
+    /// @brief Returns true if the given bit flag is set in integral type x.
     template <typename _T, typename _F> inline bool is_flag_set(_T x, _F flag)
     {
         return (x & (_T)flag) > 0;
     }
 
-    /**
-        Set the given bit flag on the integral type x.
-    */
+    /// @brief Set the given bit flag on the integral type x.
     template <typename _T, typename _F> inline _T set_flag(_T x, _F flag)
     {
         return x | (_T)flag;
     }
 
-    /**
-        Clear the given bit flag on the integral type x.
-    */
+    /// @brief Clear the given bit flag on the integral type x.
     template <typename _T, typename _F> inline _T clear_flag(_T x, _F flag)
     {
         return x & (~((_T)flag));
@@ -31,9 +26,7 @@ namespace gps
 
     namespace _detail
     {
-        /**
-            Convert a base 16 ASCII character into an char/integer.
-        */
+        /// @brief Convert a base 16 ASCII character into an char/integer.
         char from_hex(char c)
         {
             if (c >= '0' && c <= '9')
@@ -54,10 +47,8 @@ namespace gps
             }
         }
 
-        /**
-            Checks string equality with character arrays. Behavior is undefined is character array is not null
-            terminated. Returns false if either input is null.
-        */
+        /// @brief Checks string equality with character arrays. Behavior is undefined is character array is not null
+        /// terminated.Returns false if either input is null.
         bool string_equals(const char *lhs, const char *rhs)
         {
             // Return false if either input is null.
@@ -80,10 +71,8 @@ namespace gps
             return false;
         }
 
-        /**
-            Converts an ASCII character array into an integer. Behavior is undefined is character array is not null
-            terminated.
-        */
+        /// @brief Converts an ASCII character array into an integer. Behavior is undefined is character array is not
+        /// null terminated.
         int string_to_int(const char *val)
         {
             if (!val)
@@ -123,10 +112,8 @@ namespace gps
             return result;
         }
 
-        /**
-            Converts an ASCII character array into a float. Behavior is undefined is character array is not null
-            terminated.
-        */
+        /// @brief Converts an ASCII character array into a float. Behavior is undefined is character array is not null
+        /// terminated.
         float string_to_float(const char *val)
         {
             if (!val)
@@ -183,9 +170,7 @@ namespace gps
             return result;
         }
 
-        /**
-            Parse a NMEA latitude string.
-        */
+        /// @brief Parse a NMEA latitude string.
         float parse_latitude(const char *val, size_type size)
         {
             if (size < 2)
@@ -205,9 +190,7 @@ namespace gps
             return degrees;
         }
 
-        /**
-            Parse a NMEA longitude string.
-        */
+        /// @brief Parse a NMEA longitude string.
         float parse_longitude(const char *val, size_type size)
         {
             if (size < 3)
@@ -231,17 +214,20 @@ namespace gps
 
     using namespace scottz0r::gps::_detail;
 
+    /// @brief Initialize the class instance, initializing all class members to the default state. The class will be
+    /// ready to process NMEA messages after initialization.
     MicroGps::MicroGps()
-        : m_bit_flags(0), m_checksum(0), m_field_num(0), m_message_type(MessageType::Unknown), m_position()
+        : m_state_bit_flags(0), m_checksum(0), m_field_num(0), m_message_type(MessageType::Unknown), m_position({})
     {
     }
 
-    /**
-        Process a character in an NMEA message.
-
-        @param c    Character to process.
-        @return     True is a message is ready. False if a message is still being processed.
-    */
+    /// @brief Process a character in an NMEA message.
+    ///
+    /// The message_type() method must be used to determine the last message processed. The bad() method should be
+    /// checked to ensure the last processed message is valid and contained a valid checksum.
+    ///
+    /// @param c Character to process.
+    /// @return True is a message is ready. False if a message is still being processed.
     bool MicroGps::process(char c)
     {
         // Start of sentence. Reset collection state.
@@ -249,21 +235,21 @@ namespace gps
         {
             m_buffer.clear();
             m_checksum = 0;
-            m_bit_flags = 0;
+            m_state_bit_flags = 0;
             m_field_num = 0;
-            m_bit_flags = set_flag(m_bit_flags, StateBits::CollectBit);
+            m_state_bit_flags = set_flag(m_state_bit_flags, StateBits::CollectBit);
             m_message_type = MessageType::Unknown;
             return false;
         }
 
         // If not in a collection state, then do not attempt to process.
-        if (!is_flag_set(m_bit_flags, StateBits::CollectBit))
+        if (!is_flag_set(m_state_bit_flags, StateBits::CollectBit))
         {
             return false;
         }
 
         // Don't process if in a bad state.
-        if (is_flag_set(m_bit_flags, StateBits::BadBit))
+        if (is_flag_set(m_state_bit_flags, StateBits::BadBit))
         {
             return false;
         }
@@ -287,7 +273,7 @@ namespace gps
             // If buffer cannot be terminated set bad state and do not process.
             if (!m_buffer.append(0))
             {
-                m_bit_flags = set_flag(m_bit_flags, StateBits::BadBit);
+                m_state_bit_flags = set_flag(m_state_bit_flags, StateBits::BadBit);
                 return false;
             }
 
@@ -300,7 +286,7 @@ namespace gps
             // Checksum indicator. End current field.
             if (!m_buffer.append(0))
             {
-                m_bit_flags = set_flag(m_bit_flags, StateBits::BadBit);
+                m_state_bit_flags = set_flag(m_state_bit_flags, StateBits::BadBit);
                 return false;
             }
 
@@ -309,7 +295,7 @@ namespace gps
             m_buffer.clear();
 
             // Set to checksum collecting state.
-            m_bit_flags = set_flag(m_bit_flags, StateBits::ChecksumBit);
+            m_state_bit_flags = set_flag(m_state_bit_flags, StateBits::ChecksumBit);
             return false;
 
         case '\r':
@@ -318,10 +304,10 @@ namespace gps
 
         case '\n':
             // End of message. Turn off collection state.
-            m_bit_flags = clear_flag(m_bit_flags, StateBits::CollectBit);
+            m_state_bit_flags = clear_flag(m_state_bit_flags, StateBits::CollectBit);
 
             // If there is a checksum, then need to do stuff here.
-            if (is_flag_set(m_bit_flags, StateBits::ChecksumBit))
+            if (is_flag_set(m_state_bit_flags, StateBits::ChecksumBit))
             {
                 // Do not need to null terminate for checksum.
                 process_checksum();
@@ -331,12 +317,12 @@ namespace gps
             }
 
             // No checksum. This is a failure condition.
-            m_bit_flags = set_flag(m_bit_flags, StateBits::BadBit);
+            m_state_bit_flags = set_flag(m_state_bit_flags, StateBits::BadBit);
             return false;
 
         default:
             // Collect character if in bounds. Don't add to checksum if it's the checksum field.
-            if (!is_flag_set(m_bit_flags, StateBits::ChecksumBit))
+            if (!is_flag_set(m_state_bit_flags, StateBits::ChecksumBit))
             {
                 m_checksum ^= c;
             }
@@ -344,17 +330,15 @@ namespace gps
             // If buffer is full, set to bad state.
             if (!m_buffer.append(c))
             {
-                m_bit_flags = set_flag(m_bit_flags, StateBits::BadBit);
+                m_state_bit_flags = set_flag(m_state_bit_flags, StateBits::BadBit);
             }
 
             return false;
         }
     }
 
-    /**
-        Process a field, which is contained in the field buffer. Fields will be null terminated. The first field is
-        always used as a message identifier, which drives m_message_type.
-    */
+    /// @brief Process a field, which is contained in the field buffer. Fields will be null terminated. The first
+    /// field is always used as a message identifier, which drives m_message_type.
     void MicroGps::process_field()
     {
         if (m_field_num == 0)
@@ -368,27 +352,27 @@ namespace gps
                 m_message_type = MessageType::Unknown;
             }
         }
-        else
+
+        switch (m_message_type)
         {
-            switch (m_message_type)
-            {
-            case MessageType::GPGGA:
-                process_gpgga_fields();
-                break;
-            default:
-                // Do nothing.
-                break;
-            }
+        case MessageType::GPGGA:
+            process_gpgga_fields();
+            break;
+        default:
+            // Do nothing.
+            break;
         }
     }
 
-    /**
-        Process GPGGA message fields.
-    */
+    /// @brief Process GPGGA message fields.
     void MicroGps::process_gpgga_fields()
     {
         switch (m_field_num)
         {
+        case 0:
+            // Reset GPS data on first message.
+            m_position = {};
+            break;
         case 1:
             // Time
             m_position.timestamp = (unsigned)string_to_int(m_buffer.get());
@@ -442,19 +426,17 @@ namespace gps
             break; // Ignore these fields.
         default:
             // Set bad to indicate unexpected message format.
-            m_bit_flags = set_flag(m_bit_flags, StateBits::BadBit);
+            m_state_bit_flags = set_flag(m_state_bit_flags, StateBits::BadBit);
         }
     }
 
-    /**
-        Process the checksum. Sets the bad bit if the computed checksum does not match the message checksum.
-        Assumes message checksum is only 2 hex characters.
-    */
+    /// @brief Process the checksum. Sets the bad bit if the computed checksum does not match the message checksum.
+    /// Assumes message checksum is only 2 hex characters.
     void MicroGps::process_checksum()
     {
         if (m_buffer.size() > 2)
         {
-            set_flag(m_bit_flags, StateBits::BadBit);
+            set_flag(m_state_bit_flags, StateBits::BadBit);
             return;
         }
 
@@ -462,7 +444,7 @@ namespace gps
 
         if (msg_checksum != m_checksum)
         {
-            m_bit_flags = set_flag(m_bit_flags, StateBits::BadBit);
+            m_state_bit_flags = set_flag(m_state_bit_flags, StateBits::BadBit);
         }
     }
 } // namespace gps

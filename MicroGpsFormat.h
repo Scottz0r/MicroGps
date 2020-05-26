@@ -1,3 +1,4 @@
+/// @file GPS format implementation.
 #ifndef _SCOTTZ0R_GPS_FORMAT_INCLUDE_GUARD
 #define _SCOTTZ0R_GPS_FORMAT_INCLUDE_GUARD
 

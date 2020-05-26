@@ -74,6 +74,36 @@ namespace MicroGps_tests
             REQUIRE(posn.geoid_height == 0.0f);
         }
 
+        SECTION("It should reset position state when new message being processing")
+        {
+            const std::string msg_0("$GPGGA,153621.000,3854.8732,N,09445.3680,W,1,04,2.07,243.9,M,-30.1,M,,*5B\r\n");
+            const std::string msg_1("$GPGGA,152541.096,,,,,0,00,,,M,,M,,*71\r\n");
+
+            MicroGps gps;
+            for (const auto& c: msg_0)
+            {
+                gps.process(c);
+            }
+
+            REQUIRE(gps.position_data().number_satellites == 4);
+
+            for (std::size_t i = 0; i < 7; ++i)
+            {
+                gps.process(msg_1.at(i));
+            }
+
+            const auto &posn = gps.position_data();
+
+            REQUIRE(posn.timestamp == 0);
+            REQUIRE(posn.latitude == 0.0f);
+            REQUIRE(posn.longitude == 0.0f);
+            REQUIRE(posn.fix_quality == 0);
+            REQUIRE(posn.number_satellites == 0);
+            REQUIRE(posn.horizontal_dilution == 0.0f);
+            REQUIRE(posn.altitude_msl == 0.0f);
+            REQUIRE(posn.geoid_height == 0.0f);
+        }
+
         SECTION("It should fail GPGGA with bad checksum")
         {
             const std::string msg("$GPGGA,153621.000,3854.8732,N,09445.3680,W,1,04,2.07,243.9,M,-30.1,M,,*00\r\n");

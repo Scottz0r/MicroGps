@@ -1,3 +1,4 @@
+/// @file This module defines format methods for common GPS number formats.
 #include "MicroGpsFormat.h"
 
 namespace scottz0r
