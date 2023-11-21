@@ -80,7 +80,7 @@ namespace MicroGps_tests
             const std::string msg_1("$GPGGA,152541.096,,,,,0,00,,,M,,M,,*71\r\n");
 
             MicroGps gps;
-            for (const auto& c: msg_0)
+            for (const auto &c : msg_0)
             {
                 gps.process(c);
             }

@@ -10,7 +10,7 @@ Items in the `scottz0r::_detail` namespace are not for public consumption are ma
 
 ## Tests
 
-Unit tests are in the `tests` directory. This can be built with Visual Studio 2019 Community on Windows, or G++ on Linux on Linux subsystems such as Cygwin.
+Unit tests are in the `tests` directory. Tests can be built with CMake.
 
 ## Example Arduino Sketch
 
